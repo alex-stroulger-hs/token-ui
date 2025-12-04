@@ -566,7 +566,8 @@ open class TokenTextViewController: UIViewController, UITextViewDelegate, NSLayo
 
     // MARK: Input Mode
 
-    ///
+    /// Switches to input editing mode by inserting anchor text (e.g., @) at the specified location.
+    /// Use this when the user types a trigger character like @.
     open func switchToInputEditingMode(_ location: Int, text: String, initialInputLength: Int = 0) {
         let attrString = NSAttributedString(string: text, attributes: [TokenTextViewControllerConstants.inputTextAttributeName: TokenTextViewControllerConstants.inputTextAttributeAnchorValue])
         tokenTextStorage.insert(attrString, at: location)
@@ -575,6 +576,30 @@ open class TokenTextViewController: UIViewController, UITextViewDelegate, NSLayo
             tokenTextStorage.addAttributes([TokenTextViewControllerConstants.inputTextAttributeName: TokenTextViewControllerConstants.inputTextAttributeTextValue], range: inputRange)
         }
         viewAsTextView.selectedRange = NSRange(location: location + (text as NSString).length + initialInputLength, length: 0)
+        viewAsTextView.autocorrectionType = .no
+        viewAsTextView.delegate = inputModeHandler
+        textTappedHandler = inputModeTapHandler
+        delegate?.tokenTextViewDidChange(self)
+        tokenTextStorage.updateFormatting()
+    }
+
+    /// Switches to input editing mode for existing text without inserting anything.
+    /// Use this when the cursor moves to an existing @mention word.
+    /// - Parameters:
+    ///   - anchorRange: The range of the anchor character (e.g., @)
+    ///   - inputRange: The range of the input text after the anchor
+    open func switchToInputEditingModeForExistingText(anchorRange: NSRange, inputRange: NSRange) {
+        tokenTextStorage.addAttributes(
+            [TokenTextViewControllerConstants.inputTextAttributeName: TokenTextViewControllerConstants.inputTextAttributeAnchorValue],
+            range: anchorRange
+        )
+        if inputRange.length > 0 {
+            tokenTextStorage.addAttributes(
+                [TokenTextViewControllerConstants.inputTextAttributeName: TokenTextViewControllerConstants.inputTextAttributeTextValue],
+                range: inputRange
+            )
+        }
+        viewAsTextView.selectedRange = NSRange(location: inputRange.location + inputRange.length, length: 0)
         viewAsTextView.autocorrectionType = .no
         viewAsTextView.delegate = inputModeHandler
         textTappedHandler = inputModeTapHandler
